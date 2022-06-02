@@ -1,45 +1,56 @@
 #include <Arduino.h>
-#include <Wire.h>
-void setup()
-{
-Wire.begin();
-Serial.begin(115200);
-while (!Serial); // Leonardo: wait for serial monitor
-Serial.println("\nI2C Scanner");
+#define LED 16
+unsigned long myTime;
+#define interruptPin 0
+
+void Task1(void * parameter);
+void anotherTask(void * parameter);
+
+void setup(){
+  Serial.begin(115200);
+  /* we create a new task here */
+  xTaskCreate(
+  anotherTask, /* Task function. */
+  "another Task", /* name of task. */
+  10000, /* Stack size of task */
+  NULL, /* parameter of the task */
+  1, /* priority of the task */
+  NULL); /* Task handle to keep track of created task */
+  xTaskCreate(
+  Task1, /* Task function. */
+  "Task 1", /* name of task. */
+  10000, /* Stack size of task */
+  NULL, /* parameter of the task */
+  1, /* priority of the task */
+  NULL);
 }
-void loop()
-{
-byte error, address;
-int nDevices;
-Serial.println("Scanning...");
-nDevices = 0;
-for(address = 1; address < 127; address++ )
-{
-// The i2c_scanner uses the return value of
-// the Write.endTransmisstion to see if
-// a device did acknowledge to the address.
-Wire.beginTransmission(address);
-error = Wire.endTransmission();
-if (error == 0)
-{
-Serial.print("I2C device found at address 0x");
-if (address<16)
-Serial.print("0");
-Serial.print(address,HEX);
-Serial.println(" !");
-nDevices++;
+
+void loop(){
+  Serial.println("this is ESP32 Task");
+  delay(1000);
 }
-else if (error==4)
-{
-Serial.print("Unknown error at address 0x");
-if (address<16)
-Serial.print("0");
-Serial.println(address,HEX);
+
+void anotherTask( void * parameter ){
+  for(;;){
+    Serial.println("this is another Task");
+    delay(1000);
+  }
+  /* delete a task when finish,
+  this will never happen because this is infinity loop */
+  vTaskDelete( NULL );
 }
-}
-if (nDevices == 0)
-Serial.println("No I2C devices found\n");
-else
-Serial.println("done\n");
-delay(5000); // wait 5 seconds for next scan
+
+void Task1(void * parameter){
+  pinMode(LED,OUTPUT);
+  for(;;){
+    Serial.println(myTime); // prints time since program started
+    delay(500);    
+    digitalWrite(LED,HIGH);
+    Serial.println("ON");
+    delay(500);
+    digitalWrite(LED,HIGH);
+    Serial.println("OFF");
+    digitalWrite(LED,LOW);
+    delay(500);
+  }
 }
